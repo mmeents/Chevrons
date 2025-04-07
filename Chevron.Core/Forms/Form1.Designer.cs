@@ -54,6 +54,7 @@
       edWatchedFolder = new TextBox();
       label2 = new Label();
       tpIndexItem = new TabPage();
+      vrWatchingItem = new Microsoft.Web.WebView2.WinForms.WebView2();
       label3 = new Label();
       tpEmpty = new TabPage();
       label1 = new Label();
@@ -74,6 +75,7 @@
       tpHideTabs = new TabPage();
       openFileDialog1 = new OpenFileDialog();
       BrowseFolderDialog = new FolderBrowserDialog();
+      btnMakeChevron = new Button();
       ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
       splitContainer1.Panel1.SuspendLayout();
       splitContainer1.Panel2.SuspendLayout();
@@ -90,6 +92,7 @@
       tpWatchedFolder.SuspendLayout();
       ((System.ComponentModel.ISupportInitialize)edMbPreZipSize).BeginInit();
       tpIndexItem.SuspendLayout();
+      ((System.ComponentModel.ISupportInitialize)vrWatchingItem).BeginInit();
       tpEmpty.SuspendLayout();
       tpChanges.SuspendLayout();
       ((System.ComponentModel.ISupportInitialize)splitContainer3).BeginInit();
@@ -259,6 +262,7 @@
       // tpWatchedFolder
       // 
       tpWatchedFolder.BackColor = SystemColors.ButtonFace;
+      tpWatchedFolder.Controls.Add(btnMakeChevron);
       tpWatchedFolder.Controls.Add(edShowPassword);
       tpWatchedFolder.Controls.Add(edMbPreZipSize);
       tpWatchedFolder.Controls.Add(label6);
@@ -411,6 +415,7 @@
       // 
       // tpIndexItem
       // 
+      tpIndexItem.Controls.Add(vrWatchingItem);
       tpIndexItem.Controls.Add(label3);
       tpIndexItem.Location = new Point(4, 32);
       tpIndexItem.Name = "tpIndexItem";
@@ -420,10 +425,22 @@
       tpIndexItem.Text = "Item";
       tpIndexItem.UseVisualStyleBackColor = true;
       // 
+      // vrWatchingItem
+      // 
+      vrWatchingItem.AllowExternalDrop = true;
+      vrWatchingItem.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+      vrWatchingItem.CreationProperties = null;
+      vrWatchingItem.DefaultBackgroundColor = Color.White;
+      vrWatchingItem.Location = new Point(17, 47);
+      vrWatchingItem.Name = "vrWatchingItem";
+      vrWatchingItem.Size = new Size(417, 403);
+      vrWatchingItem.TabIndex = 1;
+      vrWatchingItem.ZoomFactor = 1D;
+      // 
       // label3
       // 
       label3.AutoSize = true;
-      label3.Location = new Point(58, 57);
+      label3.Location = new Point(17, 15);
       label3.Name = "label3";
       label3.Size = new Size(39, 20);
       label3.TabIndex = 0;
@@ -488,7 +505,7 @@
       // 
       tvChangesMenuStrip.ImageScalingSize = new Size(20, 20);
       tvChangesMenuStrip.Name = "tvChangesMenuStrip";
-      tvChangesMenuStrip.Size = new Size(211, 32);
+      tvChangesMenuStrip.Size = new Size(61, 4);
       tvChangesMenuStrip.Opening += tvChangesMenuStrip_Opening;
       // 
       // tcChangesRight
@@ -613,6 +630,16 @@
       BrowseFolderDialog.ShowHiddenFiles = true;
       BrowseFolderDialog.UseDescriptionForTitle = true;
       // 
+      // btnMakeChevron
+      // 
+      btnMakeChevron.Location = new Point(191, 265);
+      btnMakeChevron.Name = "btnMakeChevron";
+      btnMakeChevron.Size = new Size(118, 29);
+      btnMakeChevron.TabIndex = 14;
+      btnMakeChevron.Text = "Make Chevron";
+      btnMakeChevron.UseVisualStyleBackColor = true;
+      btnMakeChevron.Click += btnMakeChevron_Click;
+      // 
       // Form1
       // 
       AutoScaleDimensions = new SizeF(8F, 20F);
@@ -643,6 +670,7 @@
       ((System.ComponentModel.ISupportInitialize)edMbPreZipSize).EndInit();
       tpIndexItem.ResumeLayout(false);
       tpIndexItem.PerformLayout();
+      ((System.ComponentModel.ISupportInitialize)vrWatchingItem).EndInit();
       tpEmpty.ResumeLayout(false);
       tpEmpty.PerformLayout();
       tpChanges.ResumeLayout(false);
@@ -708,5 +736,7 @@
     private TabPage tpChangesItem;
     private TabPage tpChangesEmpty;
     private ContextMenuStrip tvChangesMenuStrip;
+    private Microsoft.Web.WebView2.WinForms.WebView2 vrWatchingItem;
+    private Button btnMakeChevron;
   }
 }

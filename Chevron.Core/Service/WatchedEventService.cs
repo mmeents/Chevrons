@@ -27,6 +27,7 @@ namespace Chevron.Core.Service
         void RemoveWatchedFolder(Guid Id);
         void AddEvent(WatchedFolder folder, int EventTypeId, string FileNamePath, string? oldFileNamePath = null);
         void AddEventRange(IEnumerable<WatchedEvent> events);
+        public void BuildChevron();
     }
   
     public class WatchedEventService  : IWatchedEventService {
@@ -245,8 +246,9 @@ namespace Chevron.Core.Service
         SaveAsync().GetAwaiter().GetResult();
       }
 
-      public void BuildChevron() {
-        var unarchived = WatchedEventQueue.Values.Where(e => !e.IsArchived).ToList();
+      public void BuildChevron(WatchedFolder folder) {
+        // needs tons of work
+        var unarchived = WatchedEventQueue.Values.Where(e => e.WatchedFolderId==folder.Id && !e.IsArchived).ToList();
         if (!unarchived.Any()) return;
         long maxSize = _settingsService.Settings[Ss.FileTargetBatchSize].Value.AsInt64();
         var folderGroups = unarchived.GroupBy(e => Path.GetDirectoryName(e.SourceLocation));

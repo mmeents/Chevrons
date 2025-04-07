@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Chevron.Core.PackageModels;
 using Chevron.Core.Service;
 using System.Xml.Linq;
+using Chevron.Core.Extensions;
 
 namespace Chevron.Core.Forms {
 
@@ -34,6 +35,9 @@ namespace Chevron.Core.Forms {
       lbDefaultDir.Text = $"Default Path: {_settings.DefaultPath}";
       lbWatchConfigLocation.Text = $"Watched Events File: {_settings.Settings[Ss.WatchedEventsFileName].Value}";
       ConfigureTvWatching();
+      this.Invoke((Action)(async () => {
+        await vrWatchingItem.EnsureCoreWebView2Async().ConfigureAwait(false);
+      }));
     }
 
     private bool _InWatchedFolderReset = false;
@@ -171,7 +175,31 @@ namespace Chevron.Core.Forms {
 
       }
     }
+
+    private string _currentBaseFolder = "";
+    private void ConfigureVirtualHost() {
+      var currentFolder = _virtualDirectoryService.CurrentWatchedFolder;
+      if (currentFolder == null) {
+        _currentBaseFolder = null;
+        return;
+      }
+      if (_currentBaseFolder == currentFolder.FolderPath) return; // Avoid redundant calls
+      _currentBaseFolder = currentFolder.FolderPath;
+      vrWatchingItem.CoreWebView2?.SetVirtualHostNameToFolderMapping(
+          Exts.LocalHostName,
+          _currentBaseFolder,
+          Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.Allow);
+    }
+
     private void ConfigureTpIndexItem(IndexModel index) {
+      if (index == null) {  // No folder selected reset the UI
+        vrWatchingItem.NavigateToString("<html><body><p>Weird Empty null index</p></body></html>");
+        return;
+      }
+      ConfigureVirtualHost();
+      var currentFolder = _virtualDirectoryService.CurrentWatchedFolder;
+      var html = index.GenerateHtmlView(currentFolder.FolderPath);
+      vrWatchingItem.CoreWebView2.NavigateToString(html);
     }
     private void ResetWatchedPropertyEditors(WatchedFolder folder) {
       _InWatchedFolderReset = true;
@@ -259,7 +287,11 @@ namespace Chevron.Core.Forms {
     }
 
     #endregion
+    private void btnMakeChevron_Click(object sender, EventArgs e) {
+      //_virtualDirectoryService.BuildChevron(); -- still needs work.
+    }
     #endregion 
+
     #region Changes Folders events
     private void tvChangesMenuStrip_Opening(object sender, System.ComponentModel.CancelEventArgs e) {
 

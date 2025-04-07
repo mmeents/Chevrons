@@ -3,6 +3,7 @@
 
     public const string CommonPathAdd = "\\PrompterFiles";
     public const string SettingsAdd = "\\ChevronSettings.sft";
+    public const string LocalHostName = "app.Local";
     public static string DefaultPath {
       get {
         var DefaultDir = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + Exts.CommonPathAdd;

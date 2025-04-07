@@ -29,6 +29,8 @@ namespace Chevron.Core.Service
       void SaveWatchedFolderChanges();
       void ResyncWatchedFolder(WatchedFolder folder);
 
+      void BuildChevron();
+
     }
 
     public class VirtualDirectoryService : IVirtualDirectoryService  {
@@ -39,6 +41,7 @@ namespace Chevron.Core.Service
       private WatchedFolder? _currentFolder = null;
       private WatchedFolder? _currentChangesFolder = null;
       private IndexModel? _currentIndex = null;
+      private IndexModel? _currentChangesIndex = null;
 
       public VirtualDirectoryService(ISettingsService settingsService, IWatchedEventService watchedEventService) {
         _settingsService = settingsService;
@@ -160,55 +163,85 @@ namespace Chevron.Core.Service
         set {
           if (_currentIndex != value) {
             _currentIndex = value;
-            OnWatchedItemChanged(_currentIndex);
+            OnChangesItemChanged(_currentIndex);
           }
         }
       }
 
-      public void ChangesTree_LoadTreeView(TreeView treeView){
-        treeView.Nodes.Clear();
-        foreach (var folder in _watchedService.WatchingFolders.Values) {
-          var node = treeView.Nodes.Add(folder.FolderPath);
-          node.Tag = folder; // Store WatchedFolder, not IndexModel
-          if (_indexService.Indexes.Values.Any(i => i.ParentId == folder.Id))
-            node.Nodes.Add("Loading...");
+      private bool HasUnarchivedChanges(IEnumerable<IndexModel> indexes, Guid parentId) {
+        var children = indexes.Where(i => i.ParentId == parentId && !i.IsArchived);
+        foreach (var child in children) {
+          if (!child.IsFolder || HasUnarchivedChanges(indexes, child.Id))
+            return true; // Either a file with changes or a folder with changes deeper down
         }
+        return false;
+      }
+
+      public void ChangesTree_LoadTreeView(TreeView treeView){
+
+        treeView.Nodes.Clear();
+        bool hasChanges = false;
+
+        foreach (var folder in _watchedService.WatchingFolders.Values) {
+          // Find the first folder IndexModel that matches this WatchedFolder
+          var rootIndex = _indexService.Indexes.Values
+              .FirstOrDefault(i => i.ParentId == folder.Id && !i.IsArchived && i.IsFolder);
+
+          if (rootIndex == null) continue; // No matching folder index, skip this WatchedFolder
+
+          // Check if there are unarchived changes under this folder
+          if (HasUnarchivedChanges(_indexService.Indexes.Values, rootIndex.Id)) {
+            hasChanges = true;
+            var rootNode = treeView.Nodes.Add(folder.FolderPath);
+            rootNode.Tag = folder; // Tag is just WatchedFolder
+
+            // Load the children directly under the rootIndex (skip the folder node)
+            var children = _indexService.Indexes.Values
+                .Where(i => i.ParentId == rootIndex.Id && !i.IsArchived);
+            foreach (var child in children) {
+              var childNode = rootNode.Nodes.Add(child.FileName);
+              childNode.Tag = child;
+              if (_indexService.Indexes.Values.Any(i => i.ParentId == child.Id && !i.IsArchived))
+                childNode.Nodes.Add("Loading...");
+            }
+          }
+        }
+
+
       }
 
       public void ChangesTree_BeforeExpand(object sender, TreeViewCancelEventArgs e) {
         var node = e.Node;
-        if (node != null && node.Nodes.Count == 1 && node.Nodes[0].Text == "Loading...") {
-          node.Nodes.Clear();
-          if (node.Tag is WatchedFolder folder) {
-            // Top-level: WatchedFolder → Indexes
-            var children = _indexService.Indexes.Values.Where(i => i.ParentId == folder.Id);
-            foreach (var child in children) {  // this should only be one child, the folder itself
-              var childrs = _indexService.Indexes.Values.Where(i => i.ParentId == child.Id && !i.IsArchived);
-              foreach (var chld in childrs) {
-                var childNode = node.Nodes.Add(chld.FileName);
-                childNode.Tag = chld;
-                if (_indexService.Indexes.Values.Any(i => i.ParentId == chld.Id))
-                  childNode.Nodes.Add("Loading...");
-              }
-            }
-          } else if (node.Tag is IndexModel index) {
-            // Sub-level: IndexModel → Indexes
-            var children = _indexService.Indexes.Values.Where(i => i.ParentId == index.Id && !i.IsArchived);
-            foreach (var child in children) {
-              var childNode = node.Nodes.Add(child.FileName);
-              childNode.Tag = child;
-              if (_indexService.Indexes.Values.Any(i => i.ParentId == child.Id))
-                childNode.Nodes.Add("Loading...");
-            }
-          }
+        if (node == null || node.Nodes.Count != 1 || node.Nodes[0].Text != "Loading...") return;
+
+        node.Nodes.Clear();
+        Guid parentId;
+
+        if (node.Tag is WatchedFolder folder) {
+          // For root nodes, find the matching folder IndexModel and use its Id
+          var rootIndex = _indexService.Indexes.Values
+              .FirstOrDefault(i => i.ParentId == folder.Id && !i.IsArchived && i.IsFolder);
+          if (rootIndex == null) return; // Shouldn’t happen, but safety check
+          parentId = rootIndex.Id;
+        } else if (node.Tag is IndexModel index) {
+          parentId = index.Id;
+        } else
+          return; // Invalid Tag
+
+        var children = _indexService.Indexes.Values.Where(i => i.ParentId == parentId && !i.IsArchived);
+        foreach (var child in children) {
+          var childNode = node.Nodes.Add(child.FileName);
+          childNode.Tag = child;
+          if (_indexService.Indexes.Values.Any(i => i.ParentId == child.Id && !i.IsArchived))
+            childNode.Nodes.Add("Loading...");
         }
       }
 
       public void ChangesTree_AfterSelect(object sender, TreeViewEventArgs e){
         var node = e.Node;
         if (node == null) return;
-        CurrentWatchedFolder = GetWatchedFolder(node);
-        CurrentIndex = node.Tag is IndexModel index ? index : null;
+        CurrentChangesFolder = GetWatchedFolder(node);
+        CurrentChangesIndex = node.Tag is IndexModel index ? index : null;
       }
     
       #endregion
@@ -229,8 +262,12 @@ namespace Chevron.Core.Service
         _indexService.SyncIndexToFolder(folder);
       }
 
-      #endregion
+      public void BuildChevron() {
+        _watchedService.BuildChevron();
+      }
 
-    }
+    #endregion
+
+  }
 
 }
